@@ -1,0 +1,52 @@
+/**
+ * VÍ DỤ MINH HỌA: Xử lý HTTP Redirect trong Node.js
+ * * Mục đích học tập:
+ * 1. Hiểu về HTTP Status codes (301, 302) dùng để chuyển hướng.
+ * 2. Cách sử dụng `fetch` để theo dõi chuỗi chuyển hướng (redirect chain).
+ * 3. Lấy URL cuối cùng (destination) từ phản hồi của server.
+ * * Lưu ý: Code này chỉ hoạt động với các chuyển hướng HTTP chuẩn (Server-side redirects).
+ * Nó KHÔNG hoạt động với các trang sử dụng JavaScript đếm ngược, CAPTCHA, 
+ * hoặc yêu cầu thao tác người dùng (Client-side logic) như các trang rút gọn link kiếm tiền.
+ */
+
+// Giả lập môi trường fetch (nếu chạy trên Node.js < 18 cần cài node-fetch)
+// Trong trình duyệt hoặc Node.js 18+ thì hàm fetch đã có sẵn.
+
+async function traceUrlDestination(inputUrl) {
+    console.log(`\n--- Bắt đầu phân tích: ${inputUrl} ---`);
+
+    try {
+        // Gửi request với tùy chọn redirect: 'manual' để tự kiểm soát
+        // Hoặc 'follow' để tự động đi đến đích cuối cùng
+        const response = await fetch(inputUrl, {
+            method: 'GET',
+            redirect: 'follow' // Tự động đi theo các redirect 301/302
+        });
+
+        // Kiểm tra xem URL cuối cùng có khác URL ban đầu không
+        if (response.url !== inputUrl) {
+            console.log(`[Redirect] Đã chuyển hướng!`);
+            console.log(`URL Gốc:      ${inputUrl}`);
+            console.log(`URL Đích đến: ${response.url}`);
+        } else {
+            console.log(`[Direct] Link trực tiếp, không có chuyển hướng HTTP.`);
+            console.log(`URL hiện tại: ${response.url}`);
+        }
+
+        console.log(`Trạng thái:   ${response.status} ${response.statusText}`);
+
+    } catch (error) {
+        console.error("Lỗi khi kết nối:", error.message);
+    }
+}
+
+// --- Ví dụ sử dụng ---
+
+// Ví dụ 1: Một trang web thường (Google)
+// Nó có thể redirect từ http -> https hoặc www -> non-www
+traceUrlDestination('http://google.com');
+
+// Ví dụ 2: Giả lập một link rút gọn (Bit.ly, TinyURL...)
+// Bạn có thể thay thế bằng link cần test, nhưng lưu ý các trang 
+// có bộ đếm thời gian (JS timer) sẽ không trả về link gốc ngay lập tức bằng cách này.
+// traceUrlDestination('https://bit.ly/example');
